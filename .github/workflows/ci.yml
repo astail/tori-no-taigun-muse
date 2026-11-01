@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run tests (no dependencies to install)
+        run: node --test tests/logic.test.js
+      - name: Syntax-check JavaScript
+        run: |
+          node --check src/logic.js
+          node --check src/game.js
+      - name: Build Docker image (smoke test)
+        run: docker build -t tori-no-taigun-muse .
