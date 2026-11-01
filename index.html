@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>とりのたいぐん | 鳥の大群風リズムゲーム（非公式ファンメイド）</title>
+<meta name="description" content="群れとリズムを合わせるオリジナルのブラウザ鳥リズムゲーム。クリック / スペースキー / タップで遊べます。">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; font-src 'none'; connect-src 'none'; base-uri 'none'; form-action 'none'">
+<link rel="stylesheet" href="styles.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='13' fill='%23ff8fb2'/%3E%3Ccircle cx='12' cy='14' r='2' fill='%23222'/%3E%3Cpath d='M18 16l7 2-7 2z' fill='%23f5a623'/%3E%3C/svg%3E">
+</head>
+<body>
+<main id="app">
+  <header class="hud">
+    <h1>とりのたいぐん</h1>
+    <p class="subtitle">非公式ファンメイド / オリジナルの鳥リズムゲーム</p>
+    <div class="score-box" aria-live="polite">
+      <span>スコア <strong id="score">0</strong> / 100</span>
+      <span id="combo" class="combo"></span>
+    </div>
+  </header>
+
+  <!-- Upper screen: the flock -->
+  <section id="stage" aria-label="ゲーム画面。クリック、タップ、またはスペースキーで入力します">
+    <div id="cue-banner" class="cue-banner" hidden>
+      <span id="cue-text"></span>
+    </div>
+    <div id="flock" class="flock"></div>
+    <div class="ground" aria-hidden="true"></div>
+
+    <div id="start-panel" class="panel">
+      <h2>あそびかた</h2>
+      <p>音楽のリズムに合わせて、仲間の鳥と同じタイミングで<br>
+      <strong>クリック / スペースキー / タップ</strong> してください。</p>
+      <ul>
+        <li>ふだんは足踏みステップ。鳴き声「ピーピャコ ピャッコ」のあとは
+          「ビャー！ ビャー！！」でジャンプします（操作は同じ1ボタンです）。</li>
+        <li>判定は全部で50回。ピッタリ2点、普通1点、失敗0点の100点満点。</li>
+        <li>下の画面にタイミング判定が出ます。</li>
+      </ul>
+      <button id="start-button" type="button">▶ スタート</button>
+      <p class="note">※ 音が出ます。ブラウザの仕様上、スタートを押した時点から音楽が始まります。</p>
+    </div>
+
+    <div id="result-panel" class="panel" hidden>
+      <h2>けっか</h2>
+      <p class="final-score"><strong id="final-score">0</strong> / 100 点</p>
+      <p id="rank-label"></p>
+      <p id="counts-label"></p>
+      <div class="result-actions">
+        <button id="retry-button" type="button">↻ もう一度あそぶ</button>
+        <a id="share-x" class="share-button" href="#" target="_blank" rel="noopener noreferrer">𝕏 に結果をポストする</a>
+      </div>
+      <p class="note">データは保存されません。更新すると消えます。</p>
+    </div>
+  </section>
+
+  <!-- Lower screen: timing judgement (like a handheld second screen) -->
+  <section id="judge-screen" aria-label="タイミング判定画面">
+    <div class="judge-top">
+      <span id="judge-result" class="judge-result">―</span>
+      <span id="judge-detail" class="judge-detail">スタートを押してね</span>
+    </div>
+    <div class="gauge" aria-hidden="true">
+      <div class="gauge-zone zone-good"></div>
+      <div class="gauge-zone zone-perfect"></div>
+      <div class="gauge-center"></div>
+      <div id="gauge-marker" class="gauge-marker"></div>
+      <span class="gauge-label label-early">はやい</span>
+      <span class="gauge-label label-late">おそい</span>
+    </div>
+    <div class="judge-bottom">
+      <div id="history" class="history" aria-hidden="true"></div>
+      <div class="progress-wrap" aria-hidden="true">
+        <div id="progress-bar" class="progress-bar"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p>操作：クリック / スペースキー / タップ（スマホ対応） ・ 外部フォントや外部スクリプトは読み込んでいません。</p>
+  </footer>
+</main>
+
+<!-- Original deformed bird character. Colors are changed per bird by CSS variables. -->
+<template id="bird-template">
+  <div class="bird">
+    <svg viewBox="0 0 120 110" role="img" aria-label="鳥">
+      <ellipse class="wing wing-back" cx="38" cy="55" rx="20" ry="11"></ellipse>
+      <ellipse class="body" cx="60" cy="62" rx="30" ry="26"></ellipse>
+      <circle class="head" cx="82" cy="38" r="17"></circle>
+      <path class="crest" d="M76 24 q4 -12 12 -13 q-2 8 -6 11 q6 -1 9 -6 q1 9 -6 13 q-6 3 -9 -5z"></path>
+      <circle class="eye" cx="87" cy="35" r="3.2"></circle>
+      <circle class="eye eye-dizzy" cx="87" cy="35" r="4.5"></circle>
+      <path class="beak" d="M97 36 l16 5 -16 6 q-3 -5 0 -11z"></path>
+      <path class="cheek" d="M78 45 a6 4 0 1 0 0.1 0z"></path>
+      <ellipse class="wing wing-front" cx="52" cy="60" rx="19" ry="10"></ellipse>
+      <path class="leg leg-left" d="M52 86 v12 m0 0 h-6 m6 0 h6"></path>
+      <path class="leg leg-right" d="M70 86 v12 m0 0 h-6 m6 0 h6"></path>
+      <path class="scarf" d="M68 48 q14 6 26 1 l-2 9 q-13 4 -24 -2z"></path>
+    </svg>
+  </div>
+</template>
+
+<script src="src/logic.js"></script>
+<script src="src/game.js"></script>
+</body>
+</html>
